@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMpowered Speaker Calendar</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:#F5F6F2;
+    --paper-raise:#FFFFFF;
+    --ink:#1C2B39;
+    --ink-soft:#4B5A63;
+    --line:#DADCD4;
+    --available:#2F6F5E;
+    --available-tint:#EAF2EE;
+    --taken:#A79E8F;
+    --taken-tint:#F1EEE7;
+    --amber:#8A6D3B;
+    --amber-tint:#F6EFE1;
+    --focus:#1F6F5C;
+    --error:#A3352E;
+    --error-tint:#F7EAE8;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px 96px;}
+
+  header.hero{padding:64px 24px 40px;border-bottom:1px solid var(--line);margin-bottom:40px;}
+  header.hero .inner{max-width:920px;margin:0 auto;}
+  h1{
+    font-family:'Source Serif 4',serif;font-weight:600;
+    font-size:clamp(32px,5vw,44px);line-height:1.15;margin:0 0 6px;letter-spacing:-0.01em;
+  }
+  h1 .sub{display:block;font-family:'Inter',sans-serif;font-weight:500;font-size:16px;color:var(--ink-soft);margin-top:14px;max-width:56ch;}
+
+  .stat-row{display:flex;gap:28px;margin-top:28px;flex-wrap:wrap;}
+  .stat{border-left:2px solid var(--focus);padding-left:12px;}
+  .stat .num{font-family:'Source Serif 4',serif;font-size:26px;font-weight:600;display:block;}
+  .stat .lbl{font-size:13px;color:var(--ink-soft);}
+
+  .legend{display:flex;gap:20px;margin-top:24px;font-size:13px;color:var(--ink-soft);flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.avail{background:var(--available);}
+  .dot.taken{background:var(--taken);}
+  .dot.blocked{background:var(--amber);}
+
+  .banner{max-width:920px;margin:0 auto 32px;padding:12px 16px;border-radius:2px;font-size:13.5px;}
+  .banner.setup{background:var(--error-tint);border-left:2px solid var(--error);color:var(--error);}
+  .banner.offline{background:var(--amber-tint);border-left:2px solid var(--amber);color:var(--amber);}
+
+  .months{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+  @media (max-width:640px){ .months{grid-template-columns:1fr;} }
+
+  .month-card{background:var(--paper-raise);border:1px solid var(--line);border-radius:3px;padding:20px 22px 22px;}
+  .month-card.is-booked{background:var(--taken-tint);}
+
+  .month-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+  .month-name{font-family:'Source Serif 4',serif;font-weight:600;font-size:20px;}
+  .month-status{font-size:12px;color:var(--ink-soft);}
+
+  .note{font-size:12.5px;color:var(--amber);background:var(--amber-tint);border-left:2px solid var(--amber);padding:6px 9px;margin:10px 0 14px;border-radius:2px;}
+
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .pill{border:1px solid var(--available);color:var(--available);background:transparent;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;padding:7px 12px;border-radius:2px;cursor:pointer;transition:background .15s ease, color .15s ease;}
+  .pill:hover{background:var(--available);color:#fff;}
+  .pill:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+  .pill.disabled{border-color:var(--taken);color:var(--taken);background:var(--taken-tint);cursor:default;}
+  .pill.disabled:hover{background:var(--taken-tint);color:var(--taken);}
+
+  .booked-panel{margin-top:14px;padding:12px 14px;background:var(--paper-raise);border:1px solid var(--line);border-radius:2px;font-size:13.5px;color:var(--ink-soft);}
+
+  form.signup{margin-top:14px;padding:14px 14px 16px;background:var(--available-tint);border:1px solid var(--available);border-radius:2px;}
+  form.signup .picked-date{font-weight:600;margin-bottom:10px;font-size:14px;}
+  form.signup label{display:block;font-size:12px;color:var(--ink-soft);margin:10px 0 4px;}
+  .time-options{display:flex;gap:10px;margin-top:2px;}
+  .time-option{flex:1;position:relative;}
+  .time-option input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
+  .time-option span{
+    display:block;text-align:center;padding:8px 6px;border:1px solid var(--line);
+    border-radius:2px;font-size:13px;background:#fff;color:var(--ink-soft);
+  }
+  .time-option input:checked + span{border-color:var(--focus);background:var(--focus);color:#fff;font-weight:600;}
+  .time-option input:focus-visible + span{outline:2px solid var(--focus);outline-offset:1px;}
+  form.signup input{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:2px;font-family:'Inter',sans-serif;font-size:14px;background:#fff;}
+  form.signup input:focus-visible{outline:2px solid var(--focus);outline-offset:1px;}
+  .form-actions{display:flex;gap:10px;margin-top:14px;}
+  .btn-confirm{background:var(--focus);color:#fff;border:none;padding:9px 16px;border-radius:2px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .btn-confirm:hover{background:#18574a;}
+  .btn-confirm:disabled{background:var(--taken);cursor:not-allowed;}
+  .btn-cancel{background:none;border:none;color:var(--ink-soft);font-size:13.5px;cursor:pointer;text-decoration:underline;font-family:'Inter',sans-serif;}
+  .form-error{color:var(--error);font-size:12.5px;margin-top:8px;}
+  .loading-msg, .empty-msg{text-align:center;color:var(--ink-soft);padding:40px 0;font-size:14px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="inner">
+    <h1>EMpowered lecture series
+      <span class="sub">Pick an open Tuesday or Wednesday between October 2026 and August 2027. Once a date is confirmed, the rest of that month closes for everyone else.</span>
+    </h1>
+    <div class="stat-row" id="statRow">
+      <div class="stat"><span class="num" id="statBooked">–</span><span class="lbl">months booked</span></div>
+      <div class="stat"><span class="num" id="statOpen">–</span><span class="lbl">months open</span></div>
+    </div>
+    <div class="legend">
+      <span><span class="dot avail"></span>Open date</span>
+      <span><span class="dot taken"></span>Month taken</span>
+      <span><span class="dot blocked"></span>Blocked (EDMC / holiday)</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="bannerArea"></div>
+  <div id="monthsContainer" class="months">
+    <div class="loading-msg">Loading calendar…</div>
+  </div>
+</div>
+
+<script>
+// ---- CONFIGURE THIS ----
+// Paste your Apps Script Web App URL here (ends in /exec).
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUSMesD4C5kvpdeQgRNPWBwpzqoTA2EwbUe0tb0OamlQp2pFpOj0H7WkfsaItw0fqh_g/exec';
+// -------------------------
+
+const MONTHS = [
+  { key:'2026-10', name:'October 2026',
+    dates:['2026-10-06 Tue','2026-10-13 Tue','2026-10-20 Tue','2026-10-27 Tue','2026-10-07 Wed','2026-10-14 Wed','2026-10-21 Wed'],
+    note:'4th Wednesday (Oct 28) is reserved for the EDMC quarterly meeting.' },
+  { key:'2026-11', name:'November 2026',
+    dates:['2026-11-03 Tue','2026-11-10 Tue','2026-11-17 Tue','2026-11-24 Tue','2026-11-04 Wed','2026-11-11 Wed','2026-11-18 Wed','2026-11-25 Wed'] },
+  { key:'2026-12', name:'December 2026',
+    dates:['2026-12-01 Tue','2026-12-08 Tue','2026-12-15 Tue','2026-12-02 Wed','2026-12-09 Wed','2026-12-16 Wed'],
+    note:'Last two weeks of December (Dec 18–31) are excluded for the holiday break.' },
+  { key:'2027-01', name:'January 2027',
+    dates:['2027-01-05 Tue','2027-01-12 Tue','2027-01-19 Tue','2027-01-26 Tue','2027-01-06 Wed','2027-01-13 Wed','2027-01-20 Wed'],
+    note:'4th Wednesday (Jan 27) is reserved for the EDMC quarterly meeting.' },
+  { key:'2027-02', name:'February 2027',
+    dates:['2027-02-02 Tue','2027-02-09 Tue','2027-02-16 Tue','2027-02-23 Tue','2027-02-03 Wed','2027-02-10 Wed','2027-02-17 Wed','2027-02-24 Wed'] },
+  { key:'2027-03', name:'March 2027',
+    dates:['2027-03-02 Tue','2027-03-09 Tue','2027-03-16 Tue','2027-03-23 Tue','2027-03-30 Tue','2027-03-03 Wed','2027-03-10 Wed','2027-03-17 Wed','2027-03-24 Wed','2027-03-31 Wed'] },
+  { key:'2027-04', name:'April 2027',
+    dates:['2027-04-06 Tue','2027-04-13 Tue','2027-04-20 Tue','2027-04-27 Tue','2027-04-07 Wed','2027-04-14 Wed','2027-04-21 Wed'],
+    note:'4th Wednesday (Apr 28) is reserved for the EDMC quarterly meeting.' },
+  { key:'2027-05', name:'May 2027',
+    dates:['2027-05-04 Tue','2027-05-11 Tue','2027-05-18 Tue','2027-05-25 Tue','2027-05-05 Wed','2027-05-12 Wed','2027-05-19 Wed','2027-05-26 Wed'] },
+  { key:'2027-06', name:'June 2027',
+    dates:['2027-06-01 Tue','2027-06-08 Tue','2027-06-15 Tue','2027-06-22 Tue','2027-06-29 Tue','2027-06-02 Wed','2027-06-09 Wed','2027-06-16 Wed','2027-06-23 Wed','2027-06-30 Wed'] },
+  { key:'2027-07', name:'July 2027',
+    dates:['2027-07-06 Tue','2027-07-13 Tue','2027-07-20 Tue','2027-07-27 Tue','2027-07-07 Wed','2027-07-14 Wed','2027-07-21 Wed'],
+    note:'4th Wednesday (Jul 28) is reserved for the EDMC quarterly meeting.' },
+  { key:'2027-08', name:'August 2027',
+    dates:['2027-08-03 Tue','2027-08-10 Tue','2027-08-17 Tue','2027-08-24 Tue','2027-08-31 Tue','2027-08-04 Wed','2027-08-11 Wed','2027-08-18 Wed','2027-08-25 Wed'] }
+];
+
+function fmtDate(iso){
+  const datePart = String(iso).split('T')[0]; // strip time if Sheets stored this as a real date
+  const [y,m,d] = datePart.split('-').map(Number);
+  const names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${names[m-1]} ${d}, ${y}`;
+}
+function sortDates(dates){ return [...dates].sort((a,b)=> a.split(' ')[0].localeCompare(b.split(' ')[0])); }
+
+let bookings = {}; // monthKey -> { date }
+let backendOk = true;
+
+function showBanner(kind, text){
+  document.getElementById('bannerArea').innerHTML = `<div class="banner ${kind}">${text}</div>`;
+}
+
+async function loadBookings(){
+  if(SCRIPT_URL.indexOf('PASTE_YOUR') === 0){
+    backendOk = false;
+    showBanner('setup', 'Setup needed: paste your Apps Script Web App URL into SCRIPT_URL near the top of this file.');
+    return {};
+  }
+  const res = await fetch(SCRIPT_URL + '?_=' + Date.now());
+  const data = await res.json();
+  const map = {};
+  (data.bookings || []).forEach(b => { map[b.monthKey] = { date: b.date, time: b.time }; });
+  return map;
+}
+
+function render(){
+  const container = document.getElementById('monthsContainer');
+  container.innerHTML = '';
+
+  const bookedCount = Object.keys(bookings).length;
+  document.getElementById('statBooked').textContent = bookedCount;
+  document.getElementById('statOpen').textContent = MONTHS.length - bookedCount;
+
+  MONTHS.forEach(m=>{
+    const card = document.createElement('div');
+    card.className = 'month-card' + (bookings[m.key] ? ' is-booked' : '');
+
+    const head = document.createElement('div');
+    head.className = 'month-head';
+    head.innerHTML = `<span class="month-name">${m.name}</span><span class="month-status">${bookings[m.key] ? 'Booked' : 'Open'}</span>`;
+    card.appendChild(head);
+
+    if(m.note){
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.textContent = m.note;
+      card.appendChild(note);
+    }
+
+    if(bookings[m.key]){
+      const panel = document.createElement('div');
+      panel.className = 'booked-panel';
+      const bk = bookings[m.key];
+      panel.textContent = bk.time
+        ? `This month is booked — ${fmtDate(bk.date)}, ${bk.time}.`
+        : `This month is booked — ${fmtDate(bk.date)}.`;
+      card.appendChild(panel);
+
+      const pills = document.createElement('div');
+      pills.className = 'pills';
+      sortDates(m.dates).forEach(dstr=>{
+        const iso = dstr.split(' ')[0];
+        const pill = document.createElement('span');
+        pill.className = 'pill disabled';
+        pill.textContent = fmtDate(iso).split(' ').slice(0,2).join(' ');
+        pills.appendChild(pill);
+      });
+      card.appendChild(pills);
+
+    } else {
+      const pills = document.createElement('div');
+      pills.className = 'pills';
+      sortDates(m.dates).forEach(dstr=>{
+        const [iso, dow] = dstr.split(' ');
+        const btn = document.createElement('button');
+        btn.className = 'pill';
+        btn.type = 'button';
+        btn.disabled = !backendOk;
+        btn.textContent = `${dow} ${fmtDate(iso).split(' ').slice(0,2).join(' ')}`;
+        btn.addEventListener('click', ()=> openForm(card, m, iso));
+        pills.appendChild(btn);
+      });
+      card.appendChild(pills);
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function openForm(card, month, iso){
+  const existing = card.querySelector('form.signup');
+  if(existing) existing.remove();
+
+  const form = document.createElement('form');
+  form.className = 'signup';
+  form.innerHTML = `
+    <div class="picked-date">Confirm for ${fmtDate(iso)}</div>
+    <label>Time slot</label>
+    <div class="time-options">
+      <label class="time-option">
+        <input type="radio" name="time-${iso}" value="1:00 PM - 2:00 PM" required>
+        <span>1:00 – 2:00 PM</span>
+      </label>
+      <label class="time-option">
+        <input type="radio" name="time-${iso}" value="2:00 PM - 3:00 PM" required>
+        <span>2:00 – 3:00 PM</span>
+      </label>
+    </div>
+    <label for="name-${iso}">Name</label>
+    <input id="name-${iso}" required />
+    <label for="email-${iso}">Email</label>
+    <input id="email-${iso}" type="email" required />
+    <label for="topic-${iso}">Subject matter</label>
+    <input id="topic-${iso}" required />
+    <div class="form-actions">
+      <button type="submit" class="btn-confirm">Confirm date</button>
+      <button type="button" class="btn-cancel">Cancel</button>
+    </div>
+    <div class="form-error" style="display:none;"></div>
+  `;
+
+  form.querySelector('.btn-cancel').addEventListener('click', ()=> form.remove());
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const confirmBtn = form.querySelector('.btn-confirm');
+    const errEl = form.querySelector('.form-error');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Confirming…';
+
+    const timeChoice = form.querySelector(`input[name="time-${iso}"]:checked`);
+    if(!timeChoice){
+      errEl.textContent = 'Please choose a time slot.';
+      errEl.style.display = 'block';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm date';
+      return;
+    }
+
+    const payload = {
+      monthKey: month.key,
+      date: iso,
+      time: timeChoice.value,
+      name: form.querySelector(`#name-${iso}`).value.trim(),
+      email: form.querySelector(`#email-${iso}`).value.trim(),
+      topic: form.querySelector(`#topic-${iso}`).value.trim()
+    };
+
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+
+      if(result.ok){
+        bookings[month.key] = { date: iso, time: payload.time };
+        render();
+      } else if(result.error === 'taken'){
+        errEl.textContent = 'This month was just booked by someone else. Please choose another month.';
+        errEl.style.display = 'block';
+        bookings = await loadBookings();
+        render();
+      } else {
+        errEl.textContent = 'Could not save your booking. Please try again.';
+        errEl.style.display = 'block';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm date';
+      }
+    }catch(err){
+      errEl.textContent = 'Network error — please check your connection and try again.';
+      errEl.style.display = 'block';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm date';
+    }
+  });
+
+  card.appendChild(form);
+  form.querySelector('input').focus();
+}
+
+(async function init(){
+  try{
+    bookings = await loadBookings();
+  }catch(e){
+    backendOk = false;
+    showBanner('offline', 'Could not reach the booking system right now. Please refresh, or contact the organizers if this continues.');
+    bookings = {};
+  }
+  render();
+})();
+</script>
+
+</body>
+</html>
