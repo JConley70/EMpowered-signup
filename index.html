@@ -189,7 +189,7 @@ function render(){
   const container = document.getElementById('monthsContainer');
   container.innerHTML = '';
 
-  const bookedCount = Object.keys(bookings).length;
+  const bookedCount = MONTHS.filter(m => bookings[m.key]).length;
   document.getElementById('statBooked').textContent = bookedCount;
   document.getElementById('statOpen').textContent = MONTHS.length - bookedCount;
 
